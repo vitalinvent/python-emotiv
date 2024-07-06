@@ -149,7 +149,8 @@ class EPOC(object):
         self.method = method
 
         # One may like to specify the dongle with its serial
-        self.serial_number = serial_number
+        # self.serial_number = serial_number
+        self.serial_number = "SN20120301000601"
 
         # libusb device and endpoint
         self.device = None
@@ -176,14 +177,16 @@ class EPOC(object):
         """Custom match function for libusb."""
         try:
             manu = usb.util.get_string(device, device.iManufacturer)
-        except usb.core.USBError, usb_exception:
+        # except (usb.core.USBError, usb_exception):
+        except (usb.core.USBError):
             # If the udev rule is installed, we shouldn't get an exception
             # for Emotiv device.
-            print usb_exception
+            # print (usb_exception)
+            print(usb.core.USBError)
             return False
         else:
             if manu and manu.startswith(self.MANUFACTURER_PREFIX):
-                print manu
+                print (manu)
                 return True
                 # FIXME: This may not be necessary at all Found a dongle, check for interface class 3
                 for interf in device.get_active_configuration():
@@ -208,6 +211,9 @@ class EPOC(object):
             raise EPOCNotPluggedError("Emotiv EPOC not found.")
 
         for dev in devices:
+            print(usb.util.get_string(dev, dev.iSerialNumber))
+
+        for dev in devices:
             serial = usb.util.get_string(dev, dev.iSerialNumber)
             if self.serial_number and self.serial_number != serial:
                 # If a special S/N is given, look for it.
@@ -219,7 +225,7 @@ class EPOC(object):
             self.product_id = "%x" % dev.idProduct
 
             if self.product_id == "0001":
-                print "Consumer headset detected."
+                print ("Consumer headset detected.")
                 self.headset_type = "consumer"
 
             if self.method == "libusb":
@@ -250,7 +256,7 @@ class EPOC(object):
         except usb.USBError as ue:
             if ue.errno == 110:
                 self.headset_on = False
-                print "Setup is OK but make sure that headset is turned on."
+                print ("Setup is OK but make sure that headset is turned on.")
         else:
             self.headset_on = True
 
@@ -278,7 +284,7 @@ class EPOC(object):
                                            self.serial_number[13], '\x00',
                                            self.serial_number[12], '\x50'])
 
-        self._cipher = AES.new(self.decryption_key)
+        self._cipher = AES.new(self.decryption_key, AES.MODE_SIV)
 
     def set_external_decryption(self):
         """Use another process for concurrent decryption."""
@@ -421,16 +427,16 @@ def main():
                 print("\x1b[2J\x1b[H")
                 header = "Emotiv Data Packet [%3d/128] [Loss: N/A] [Battery: %2d(%%)]" % (
                     e.counter, e.battery)
-                print "%s\n%s" % (header, '-'*len(header))
+                print ("%s\n%s" % (header, '-'*len(header)))
 
-                print "%10s: %5d" % ("Gyro(x)", e.gyroX)
-                print "%10s: %5d" % ("Gyro(y)", e.gyroY)
+                print ("%10s: %5d" % ("Gyro(x)", e.gyroX))
+                print ("%10s: %5d" % ("Gyro(y)", e.gyroY))
 
                 for i,channel in enumerate(e.channel_mask):
-                    print "%10s: %.2f %20s: %.2f" % (channel, data[i], "Quality", e.quality[channel])
-        except EPOCTurnedOffError, ete:
-            print ete
-        except KeyboardInterrupt, ki:
+                    print ("%10s: %.2f %20s: %.2f" % (channel, data[i], "Quality", e.quality[channel]))
+        except (EPOCTurnedOffError, ete):
+            print (ete)
+        except (KeyboardInterrupt, ki):
             e.disconnect()
             return 0
 
