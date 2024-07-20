@@ -151,6 +151,7 @@ class EPOC(object):
         # One may like to specify the dongle with its serial
         # self.serial_number = serial_number
         self.serial_number = "SN20120301000601"
+        # self.serial_number = "74972392"
 
         # libusb device and endpoint
         self.device = None
@@ -210,8 +211,8 @@ class EPOC(object):
         if not devices:
             raise EPOCNotPluggedError("Emotiv EPOC not found.")
 
-        for dev in devices:
-            print(usb.util.get_string(dev, dev.iSerialNumber))
+        # for dev in devices:
+        #     print(usb.util.get_string(dev, dev.iSerialNumber))
 
         for dev in devices:
             serial = usb.util.get_string(dev, dev.iSerialNumber)
@@ -284,7 +285,9 @@ class EPOC(object):
                                            self.serial_number[13], '\x00',
                                            self.serial_number[12], '\x50'])
 
-        self._cipher = AES.new(self.decryption_key, AES.MODE_SIV)
+        print(self.decryption_key);
+
+        self._cipher = AES.new(str.encode(self.decryption_key), AES.MODE_EAX)
 
     def set_external_decryption(self):
         """Use another process for concurrent decryption."""
@@ -370,8 +373,10 @@ class EPOC(object):
         # Pre-allocated array
         _buffer = np.ndarray((total_samples, len(self.channel_mask)), dtype=np.float64)
 
+        neuro_data = self.endpoint.read(32 * (total_samples + duration + 1), timeout=(duration+1)*1000)
+
         # Acquire in one read, this should be more robust against drops
-        raw_data = self._cipher.decrypt(self.endpoint.read(32 * (total_samples + duration + 1), timeout=(duration+1)*1000))
+        raw_data = self._cipher.decrypt(neuro_data)
 
         if stop_callback and stop_callback_param:
             stop_callback(stop_callback_param)
