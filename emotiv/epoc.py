@@ -151,6 +151,8 @@ class EPOC(object):
         # One may like to specify the dongle with its serial
         # self.serial_number = serial_number
         self.serial_number = "SN20120301000601"
+        # self.serial_number = "SN20120229000459" #from lsusb in proj folder. NOT REDADING
+
         # self.serial_number = "74972392"
 
         # libusb device and endpoint
@@ -285,7 +287,7 @@ class EPOC(object):
                                            self.serial_number[13], '\x00',
                                            self.serial_number[12], '\x50'])
 
-        print(self.decryption_key);
+        print(self.decryption_key)
 
         self._cipher = AES.new(str.encode(self.decryption_key), AES.MODE_EAX)
 
@@ -300,7 +302,7 @@ class EPOC(object):
 
     def __get_sample_dummy(self):
         """Read random dummy samples."""
-        raw_data = self.endpoint.read(32)
+        raw_data = self.endpoint.read(32,100)
         return [utils.get_level(raw_data, self.bit_indexes[n]) for n in self.channel_mask]
 
     def get_sample(self):
@@ -374,6 +376,8 @@ class EPOC(object):
         _buffer = np.ndarray((total_samples, len(self.channel_mask)), dtype=np.float64)
 
         neuro_data = self.endpoint.read(32 * (total_samples + duration + 1), timeout=(duration+1)*1000)
+        # neuro_data = self.endpoint.read(32 * (total_samples + duration + 1),100)
+        # neuro_data = self.endpoint.read(6432, 100)
 
         # Acquire in one read, this should be more robust against drops
         raw_data = self._cipher.decrypt(neuro_data)

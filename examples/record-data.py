@@ -31,7 +31,8 @@ except ImportError:
 
 def main():
     try:
-        duration = int(sys.argv[1])
+        # duration = int(sys.argv[1])
+        duration = 1
     except:
         print ("Usage: %s <duration> [ch1,ch2,..,chN]" % sys.argv[0])
         return 1
