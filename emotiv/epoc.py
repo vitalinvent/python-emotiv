@@ -30,8 +30,9 @@ import usb.core
 import usb.util
 
 import numpy as np
+from emotiv import util
 
-import utils
+# import util
 
 
 class EPOCError(Exception):
@@ -289,7 +290,9 @@ class EPOC(object):
 
         print(self.decryption_key)
 
-        self._cipher = AES.new(str.encode(self.decryption_key), AES.MODE_EAX)
+        # self._cipher = AES.new(str.encode("utf8").encode(self.decryption_key), AES.MODE_EAX)
+        # self._cipher = AES.new(str.encode(self.decryption_key), AES.MODE_EAX)
+        self._cipher = AES.new(self.decryption_key.encode("utf8"), AES.MODE_EAX)
 
     def set_external_decryption(self):
         """Use another process for concurrent decryption."""
@@ -303,7 +306,7 @@ class EPOC(object):
     def __get_sample_dummy(self):
         """Read random dummy samples."""
         raw_data = self.endpoint.read(32,100)
-        return [utils.get_level(raw_data, self.bit_indexes[n]) for n in self.channel_mask]
+        return [util.get_level(raw_data, self.bit_indexes[n]) for n in self.channel_mask]
 
     def get_sample(self):
         """Returns an array of EEG samples."""
@@ -319,9 +322,9 @@ class EPOC(object):
                 self.counter = ctr
                 # Contact qualities
                 if self.cq_order[ctr]:
-                    self.quality[self.cq_order[ctr]] = utils.get_level(raw_data, self.bit_indexes["QU"]) / 540.0
+                    self.quality[self.cq_order[ctr]] = util.get_level(raw_data, self.bit_indexes["QU"]) / 540.0
                 # Finally EEG data
-                return [0.51 * utils.get_level(raw_data, self.bit_indexes[n]) for n in self.channel_mask]
+                return [0.51 * util.get_level(raw_data, self.bit_indexes[n]) for n in self.channel_mask]
             else:
                 # Set a synthetic counter for this special packet: 128
                 self.counter = 128
@@ -363,7 +366,7 @@ class EPOC(object):
             for i in range(13, -1, -1):
                 level <<= 1
                 b, o = (bits[i] / 8) + 1, bits[i] % 8
-                level |= (ord(raw_data[b]) >> o) & 1
+                level |= (raw_data[round(b)] >> o) & 1
             # Return level in uV (microVolts)
             return level
 
@@ -375,12 +378,12 @@ class EPOC(object):
         # Pre-allocated array
         _buffer = np.ndarray((total_samples, len(self.channel_mask)), dtype=np.float64)
 
-        neuro_data = self.endpoint.read(32 * (total_samples + duration + 1), timeout=(duration+1)*1000)
+        # neuro_data = self.endpoint.read(32 * (total_samples + duration + 1), timeout=(duration+1)*1000)
         # neuro_data = self.endpoint.read(32 * (total_samples + duration + 1),100)
-        # neuro_data = self.endpoint.read(6432, 100)
+        neuro_data = self.endpoint.read(6432, 100)
 
         # Acquire in one read, this should be more robust against drops
-        raw_data = self._cipher.decrypt(neuro_data)
+        raw_data = self._cipher.decrypt(bytearray(neuro_data))
 
         if stop_callback and stop_callback_param:
             stop_callback(stop_callback_param)
@@ -394,7 +397,7 @@ class EPOC(object):
             if c == total_samples:
                 break
             # Parse counter
-            ctr = ord(block[0])
+            ctr = block[0]
             # Skip battery
             if ctr < 128:
                 idx.append(ctr)
@@ -402,7 +405,7 @@ class EPOC(object):
                 c += 1
                 # Update qualities as well
                 if self.cq_order[ctr] is not None:
-                    self.quality[self.cq_order[ctr]] = utils.get_level(block, self.bit_indexes["QU"]) / 540.0
+                    self.quality[self.cq_order[ctr]] = util.get_level(block, self.bit_indexes["QU"]) / 540.0
             else:
                 # Parse battery level
                 self.battery = self.battery_levels[ctr]

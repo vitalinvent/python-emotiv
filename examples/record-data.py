@@ -27,7 +27,7 @@ try:
     from emotiv import epoc, utils
 except ImportError:
     sys.path.insert(0, "..")
-    from emotiv import epoc, utils
+    from emotiv import epoc, util
 
 def main():
     try:
@@ -55,7 +55,7 @@ def main():
     print ("Contact qualities")
     print (headset.quality)
 
-    utils.save_as_matlab(data, headset.channel_mask)
+    util.save_as_matlab(data, headset.channel_mask)
 
     try:
         headset.disconnect()

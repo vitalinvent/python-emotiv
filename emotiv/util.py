@@ -38,20 +38,20 @@ def get_level(raw_data, bits):
     for i in range(13, -1, -1):
         level <<= 1
         b, o = (bits[i] / 8) + 1, bits[i] % 8
-        level |= (ord(raw_data[b]) >> o) & 1
+        level |= (raw_data[round(b)] >> o) & 1
     return 0.51*level
 
 def save_as_matlab(_buffer, channel_mask, folder=None, prefix=None, filename=None, metadata=None):
     """Save as matlab data with optional metadata."""
     nr_samples = _buffer[:, 0].size
-    trial = np.zeros((1,), dtype=np.object)
+    trial = np.zeros((1,), dtype=object)
     trial[0] = _buffer[:, 1:].astype(np.float64).T
-    trial_time = np.zeros((1,), dtype=np.object)
+    trial_time = np.zeros((1,), dtype=object)
     trial_time[0] = np.array(range(nr_samples)) / 128.0
 
     # This structure can be read by fieldtrip functions directly
     fieldtrip_data = {"fsample"     : 128.0,
-                      "label"       : np.array(channel_mask, dtype=np.object).reshape((len(channel_mask), 1)),
+                      "label"       : np.array(channel_mask, dtype=object).reshape((len(channel_mask), 1)),
                       "trial"       : trial,
                       "time"        : trial_time,
                       "sampleinfo"  : np.array([1, nr_samples])}
